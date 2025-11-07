@@ -32,10 +32,14 @@ static const char *TAG = "example";
 #define I2C_MASTER_RX_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
 #define I2C_MASTER_TIMEOUT_MS 1000
 
-#define LSM9DS1_I2C_ADDRESS 0x1E
+#define LSM9DS1_I2C_ADDRESS 0x6B
+
 #define LSM9DS1_I2C_WHO_AM_I 0x0F
 
 #define LSM9DS1_CTRL_REG6_XL 0x20
+#define LSM9DS1_CTRL_REG8 0x22
+
+#define LSM9DS1_CTRL_REG2_M 0x21
 
 typedef struct {
    int16_t x;
@@ -113,8 +117,9 @@ void app_main(void) {
    ESP_LOGI(TAG, "I2C initialized successfully");
 
    // Turn on accelerometer
-   ESP_ERROR_CHECK(
-       lsm9ds1_write_byte(dev_handle, LSM9DS1_CTRL_REG6_XL, 0b110 << 5));
+   ESP_ERROR_CHECK(lsm9ds1_write_byte(dev_handle, LSM9DS1_CTRL_REG8, 0x5));
+
+   ESP_ERROR_CHECK(lsm9ds1_write_byte(dev_handle, LSM9DS1_CTRL_REG6_XL, 0x70));
 
    while (true) {
       int16_vec3_t vec = lsm9ds1_get_accl_vec(dev_handle);
