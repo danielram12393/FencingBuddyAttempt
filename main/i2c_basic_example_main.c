@@ -15,6 +15,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "lsm9ds1.h"
 #include "portmacro.h"
 #include "sdkconfig.h"
 #include <stdio.h>
@@ -30,61 +31,6 @@ static const char *TAG = "example";
    CONFIG_I2C_MASTER_FREQUENCY      /*!< I2C master clock frequency */
 #define I2C_MASTER_TX_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
 #define I2C_MASTER_RX_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
-#define I2C_MASTER_TIMEOUT_MS 1000
-
-#define LSM9DS1_I2C_ADDRESS 0x6B
-
-#define LSM9DS1_I2C_WHO_AM_I 0x0F
-
-#define LSM9DS1_CTRL_REG6_XL 0x20
-#define LSM9DS1_CTRL_REG8 0x22
-
-#define LSM9DS1_CTRL_REG2_M 0x21
-
-typedef struct {
-   int16_t x;
-   int16_t y;
-   int16_t z;
-} int16_vec3_t;
-
-static esp_err_t lsm9ds1_read_byte(i2c_master_dev_handle_t dev_handle,
-                                   uint8_t reg_addr, uint8_t *data_buffer) {
-   uint8_t write_buf[1] = {reg_addr};
-   return i2c_master_transmit_receive(
-       dev_handle, write_buf, sizeof(write_buf), data_buffer, 1,
-       I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
-}
-
-static esp_err_t lsm9ds1_write_byte(i2c_master_dev_handle_t dev_handle,
-                                    uint8_t reg_addr, uint8_t data) {
-   uint8_t write_buf[2] = {reg_addr, data};
-   return i2c_master_transmit(dev_handle, write_buf, sizeof(write_buf),
-                              I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
-}
-
-static int16_vec3_t lsm9ds1_get_accl_vec(i2c_master_dev_handle_t dev_handle) {
-   int16_vec3_t ret_vec;
-
-   uint8_t most_significant;
-   uint8_t least_significant;
-
-   ESP_ERROR_CHECK(lsm9ds1_read_byte(dev_handle, 0x28, &least_significant));
-   ESP_ERROR_CHECK(lsm9ds1_read_byte(dev_handle, 0x29, &most_significant));
-
-   ret_vec.x = (most_significant << 8) | least_significant;
-
-   ESP_ERROR_CHECK(lsm9ds1_read_byte(dev_handle, 0x2A, &least_significant));
-   ESP_ERROR_CHECK(lsm9ds1_read_byte(dev_handle, 0x2B, &most_significant));
-
-   ret_vec.y = (most_significant << 8) | least_significant;
-
-   ESP_ERROR_CHECK(lsm9ds1_read_byte(dev_handle, 0x2C, &least_significant));
-   ESP_ERROR_CHECK(lsm9ds1_read_byte(dev_handle, 0x2D, &most_significant));
-
-   ret_vec.z = (most_significant << 8) | least_significant;
-
-   return ret_vec;
-}
 
 /**
  * @brief i2c master initialization
@@ -119,11 +65,12 @@ void app_main(void) {
    // Turn on accelerometer
    ESP_ERROR_CHECK(lsm9ds1_write_byte(dev_handle, LSM9DS1_CTRL_REG8, 0x5));
 
-   ESP_ERROR_CHECK(lsm9ds1_write_byte(dev_handle, LSM9DS1_CTRL_REG6_XL, 0x70));
+   ESP_ERROR_CHECK(lsm9ds1_write_byte(dev_handle, LSM9DS1_CTRL_REG6_XL, 0x68));
 
    while (true) {
-      int16_vec3_t vec = lsm9ds1_get_accl_vec(dev_handle);
-      printf("X:%6d Y:%6d Z:%6d\n", vec.x, vec.y, vec.z);
+      vec3_t vec = lsm9ds1_get_accl_vec(dev_handle);
+      printf("\r                                           ");
+      printf("X:%8.3f Y:%8.3f Z:%8.3f", vec.x, vec.y, vec.z);
       vTaskDelay(10 / portTICK_PERIOD_MS);
    }
 }
