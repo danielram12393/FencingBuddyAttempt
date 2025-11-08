@@ -1,9 +1,8 @@
 idf_component_register(
    SRCS 
-      "src/lsm9ds1.c"
+      "src/i2c.c"
    INCLUDE_DIRS 
       "include"
    REQUIRES
       driver
-      esp-dsp
 )
